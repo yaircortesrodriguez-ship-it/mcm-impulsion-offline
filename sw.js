@@ -1,10 +1,13 @@
-const CACHE_NAME='mcm-impulsion-pwa-v2-1';
+const CACHE_NAME='mcm-impulsion-pwa-v2-2';
+const BASE='/mcm-impulsion-offline/';
+const INDEX=BASE+'index.html';
+
 const APP_SHELL=[
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './icon-192.png',
-  './icon-512.png'
+  BASE,
+  INDEX,
+  BASE+'manifest.webmanifest',
+  BASE+'icon-192.png',
+  BASE+'icon-512.png'
 ];
 
 self.addEventListener('install',event=>{
@@ -31,7 +34,6 @@ self.addEventListener('fetch',event=>{
   const request=event.request;
   const url=new URL(request.url);
 
-  // No interceptar el backend de Apps Script.
   if(url.origin!==self.location.origin) return;
   if(request.method!=='GET') return;
 
@@ -39,21 +41,34 @@ self.addEventListener('fetch',event=>{
     event.respondWith(
       fetch(request)
         .then(response=>{
-          const copy=response.clone();
-          caches.open(CACHE_NAME).then(cache=>cache.put('./index.html',copy));
+          if(response&&response.ok){
+            const copy=response.clone();
+            caches.open(CACHE_NAME).then(cache=>cache.put(INDEX,copy));
+          }
           return response;
         })
-        .catch(()=>caches.match('./index.html'))
+        .catch(async()=>{
+          return (
+            await caches.match(request) ||
+            await caches.match(INDEX) ||
+            await caches.match(BASE)
+          );
+        })
     );
     return;
   }
 
   event.respondWith(
-    caches.match(request)
-      .then(cached=>cached || fetch(request).then(response=>{
-        const copy=response.clone();
-        caches.open(CACHE_NAME).then(cache=>cache.put(request,copy));
+    caches.match(request).then(cached=>{
+      if(cached) return cached;
+
+      return fetch(request).then(response=>{
+        if(response&&response.ok){
+          const copy=response.clone();
+          caches.open(CACHE_NAME).then(cache=>cache.put(request,copy));
+        }
         return response;
-      }))
+      });
+    })
   );
 });
