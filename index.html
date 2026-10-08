@@ -506,6 +506,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
           <span id="offlineConnectionText">Preparando aplicación offline…</span>
         </div>
         <div id="offlineSaveText" class="offline-secondary">Inicializando almacenamiento de la tablet.</div>
+        <div id="offlineReadyText" class="offline-secondary">Preparando apertura sin internet…</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span id="offlinePendingText" class="offline-secondary">Pendientes: 0</span>
@@ -623,9 +624,8 @@ const PWA_BOOTSTRAP_KEY='pwaBootstrap';
 const PWA_BACKEND_STORAGE_KEY='MCM_IMP_BACKEND_URL';
 
 window.addEventListener('load',async()=>{
-  registerMcmServiceWorker();
-
   try{
+    await registerMcmServiceWorker();
     await initOfflineStorage();
     await loadPwaBootstrap();
   }catch(err){
@@ -635,12 +635,22 @@ window.addEventListener('load',async()=>{
 });
 
 let deferredInstallPrompt=null;
+let mcmOfflineReady=false;
 
 function isMcmStandalone(){
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
     window.navigator.standalone===true
   );
+}
+
+function setOfflineReadyUi(message,ready){
+  mcmOfflineReady=Boolean(ready);
+  const el=document.getElementById('offlineReadyText');
+  if(el){
+    el.textContent=message || (ready ? '✓ Lista para abrir sin internet.' : 'Preparando apertura sin internet…');
+  }
+  updateInstallAppButton();
 }
 
 function updateInstallAppButton(){
@@ -652,7 +662,11 @@ function updateInstallAppButton(){
     return;
   }
 
-  btn.style.display=deferredInstallPrompt?'inline-flex':'none';
+  // No ofrecemos instalación hasta que el Service Worker controle
+  // realmente la página y el shell offline haya quedado cacheado.
+  btn.style.display=(deferredInstallPrompt && mcmOfflineReady)
+    ? 'inline-flex'
+    : 'none';
 }
 
 window.addEventListener('beforeinstallprompt',event=>{
@@ -673,9 +687,16 @@ async function installMcmPwa(){
     return;
   }
 
+  if(!mcmOfflineReady){
+    updateOfflineStatus(
+      'El modo offline todavía se está preparando. Espera unos segundos.'
+    );
+    return;
+  }
+
   if(!deferredInstallPrompt){
     updateOfflineStatus(
-      'Chrome todavía está preparando la instalación. Espera unos segundos y vuelve a intentarlo.'
+      'Chrome todavía no ofrece la instalación. Mantén esta página abierta unos segundos y revisa nuevamente.'
     );
     return;
   }
@@ -691,16 +712,120 @@ async function installMcmPwa(){
   }
 }
 
-function registerMcmServiceWorker(){
-  if(!('serviceWorker' in navigator)) return;
+async function prewarmMcmOfflineShell(){
+  if(!('caches' in window)) return;
 
-  navigator.serviceWorker.register('./sw.js',{scope:'./'})
-    .then(()=>navigator.serviceWorker.ready)
-    .then(()=>{
-      console.log('MCM Equipos de Impulsión: Service Worker activo y listo.');
-      updateInstallAppButton();
-    })
-    .catch(err=>console.error('Service Worker:',err));
+  const base='/mcm-impulsion-offline/';
+  const urls=[
+    base,
+    base+'index.html',
+    base+'manifest.webmanifest',
+    base+'icon-192.png',
+    base+'icon-512.png'
+  ];
+
+  const cache=await caches.open('mcm-impulsion-pwa-v2-3');
+
+  for(const url of urls){
+    try{
+      const response=await fetch(url,{cache:'reload'});
+
+      if(response && response.ok){
+        await cache.put(url,response.clone());
+      }
+    }catch(e){
+      // Si un recurso falla en este momento, el SW volverá a intentarlo.
+      console.warn('No se pudo precargar:',url,e);
+    }
+  }
+}
+
+function waitForController(timeoutMs=10000){
+  return new Promise(resolve=>{
+    if(navigator.serviceWorker.controller){
+      resolve(true);
+      return;
+    }
+
+    let finished=false;
+
+    const done=value=>{
+      if(finished) return;
+      finished=true;
+      clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener('controllerchange',onChange);
+      resolve(value);
+    };
+
+    const onChange=()=>done(Boolean(navigator.serviceWorker.controller));
+
+    navigator.serviceWorker.addEventListener('controllerchange',onChange);
+
+    const timer=setTimeout(()=>{
+      done(Boolean(navigator.serviceWorker.controller));
+    },timeoutMs);
+  });
+}
+
+async function registerMcmServiceWorker(){
+  if(!('serviceWorker' in navigator)){
+    setOfflineReadyUi('Este navegador no permite modo offline.',false);
+    return;
+  }
+
+  try{
+    setOfflineReadyUi('Preparando apertura sin internet…',false);
+
+    const registration=await navigator.serviceWorker.register(
+      '/mcm-impulsion-offline/sw.js',
+      {
+        scope:'/mcm-impulsion-offline/',
+        updateViaCache:'none'
+      }
+    );
+
+    try{
+      await registration.update();
+    }catch(e){}
+
+    await navigator.serviceWorker.ready;
+    await prewarmMcmOfflineShell();
+
+    let controlled=Boolean(navigator.serviceWorker.controller);
+
+    if(!controlled){
+      controlled=await waitForController(10000);
+    }
+
+    // En algunos Android/Chrome el primer load instala el SW pero no queda
+    // controlado hasta un reload. Hacemos UN único reload automático online.
+    if(!controlled && navigator.onLine){
+      const reloadKey='MCM_IMP_SW_CONTROL_RELOAD';
+
+      if(sessionStorage.getItem(reloadKey)!=='1'){
+        sessionStorage.setItem(reloadKey,'1');
+        location.reload();
+        return;
+      }
+    }
+
+    if(navigator.serviceWorker.controller){
+      sessionStorage.removeItem('MCM_IMP_SW_CONTROL_RELOAD');
+      setOfflineReadyUi('✓ Lista para abrir sin internet.',true);
+      console.log('MCM Impulsión: PWA offline lista y controlada.');
+    }else{
+      setOfflineReadyUi(
+        'Modo offline instalado, pero Chrome aún no tomó control. Recarga una vez con internet.',
+        false
+      );
+    }
+  }catch(err){
+    console.error('Service Worker:',err);
+    setOfflineReadyUi(
+      'No se pudo preparar el modo offline. Mantén internet activo y recarga.',
+      false
+    );
+  }
 }
 
 function normalizeBackendUrl(url){

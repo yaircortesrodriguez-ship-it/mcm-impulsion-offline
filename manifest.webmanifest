@@ -2,7 +2,7 @@
   "name": "MCM - Control Equipos de Impulsión",
   "short_name": "Impulsión",
   "id": "/mcm-impulsion-offline/",
-  "start_url": "/mcm-impulsion-offline/",
+  "start_url": "/mcm-impulsion-offline/index.html",
   "scope": "/mcm-impulsion-offline/",
   "display": "standalone",
   "display_override": [

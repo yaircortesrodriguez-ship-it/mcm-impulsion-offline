@@ -1,4 +1,4 @@
-const CACHE_NAME='mcm-impulsion-pwa-v2-2';
+const CACHE_NAME='mcm-impulsion-pwa-v2-3';
 const BASE='/mcm-impulsion-offline/';
 const INDEX=BASE+'index.html';
 
@@ -38,37 +38,53 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET') return;
 
   if(request.mode==='navigate'){
-    event.respondWith(
-      fetch(request)
-        .then(response=>{
-          if(response&&response.ok){
-            const copy=response.clone();
-            caches.open(CACHE_NAME).then(cache=>cache.put(INDEX,copy));
-          }
-          return response;
-        })
-        .catch(async()=>{
-          return (
-            await caches.match(request) ||
-            await caches.match(INDEX) ||
-            await caches.match(BASE)
-          );
-        })
-    );
+    event.respondWith((async()=>{
+      // Sin conexión: ir directo al shell local para evitar la pantalla
+      // "No tienes conexión" de Android/Chrome.
+      if(self.navigator && self.navigator.onLine===false){
+        return (
+          await caches.match(INDEX,{ignoreSearch:true}) ||
+          await caches.match(BASE,{ignoreSearch:true})
+        );
+      }
+
+      try{
+        const response=await fetch(request);
+
+        if(response&&response.ok){
+          const copy=response.clone();
+          const cache=await caches.open(CACHE_NAME);
+          await cache.put(INDEX,copy);
+        }
+
+        return response;
+      }catch(e){
+        return (
+          await caches.match(request,{ignoreSearch:true}) ||
+          await caches.match(INDEX,{ignoreSearch:true}) ||
+          await caches.match(BASE,{ignoreSearch:true})
+        );
+      }
+    })());
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then(cached=>{
-      if(cached) return cached;
+  event.respondWith((async()=>{
+    const cached=await caches.match(request,{ignoreSearch:true});
+    if(cached) return cached;
 
-      return fetch(request).then(response=>{
-        if(response&&response.ok){
-          const copy=response.clone();
-          caches.open(CACHE_NAME).then(cache=>cache.put(request,copy));
-        }
-        return response;
-      });
-    })
-  );
+    try{
+      const response=await fetch(request);
+
+      if(response&&response.ok){
+        const copy=response.clone();
+        const cache=await caches.open(CACHE_NAME);
+        await cache.put(request,copy);
+      }
+
+      return response;
+    }catch(e){
+      return caches.match(request,{ignoreSearch:true});
+    }
+  })());
 });
