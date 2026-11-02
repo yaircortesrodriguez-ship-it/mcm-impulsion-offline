@@ -57,9 +57,26 @@ input,select,textarea{width:100%;padding:9px 10px;border:1px solid #CBD5E1;borde
 textarea{min-height:64px;resize:vertical}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--secondary);box-shadow:0 0 0 3px rgba(47,110,165,.12)}
 .required:after{content:" *";color:#D92D20}
-.yesno{display:flex;gap:7px;flex-wrap:wrap}.pill{border:1px solid #CBD5E1;background:#fff;border-radius:999px;padding:7px 13px;cursor:pointer;font-weight:700}
-.yes.active{background:#E8F5EF;border-color:#81C8AA;color:#157347}.no.active{background:#F3F4F6;border-color:#B8BEC8;color:#4B5563}
-.fields{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed #CBD5E1}.fields.show{display:block}
+.yesno{display:flex;gap:10px;flex-wrap:wrap}
+.pill{
+  border:2px solid #CBD5E1;
+  background:#fff;
+  border-radius:999px;
+  padding:8px 16px;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:800;
+  line-height:1.1;
+  transition:all .15s ease;
+  min-width:58px;
+}
+.yes{background:#F3FAF5;border-color:#8BC9A1;color:#347A4A}
+.no{background:#FFF6F6;border-color:#E6A0A0;color:#A45353}
+.yes:hover{background:#E9F6ED}
+.no:hover{background:#FCECEC}
+.yes.active{background:#67B780;border-color:#4F9E68;color:#fff;box-shadow:0 0 0 3px rgba(103,183,128,.12)}
+.no.active{background:#D77979;border-color:#BE6262;color:#fff;box-shadow:0 0 0 3px rgba(215,121,121,.12)}
+.fields{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed #CBD5E1}.fields.show{display:block}
 .help{font-size:12px;color:var(--muted);margin-top:6px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
 .main-button,.secondary-button,.danger-button{border:0;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer}
@@ -440,6 +457,26 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid 
 }
 
 
+
+.housekeeping-decision{
+  margin-top:12px !important;padding:14px 16px;border:1px solid #DCE6F0;
+  border-radius:12px 12px 0 0;background:#F8FAFC;
+}
+.housekeeping-decision label{margin-bottom:4px}
+.closure-housekeeping-photo{
+  margin-top:0 !important;padding:12px 16px 14px !important;border:1px solid #DCE6F0 !important;
+  border-top:0 !important;border-radius:0 0 12px 12px;background:#F8FAFC;
+}
+.closure-housekeeping-photo .help{margin:3px 0 9px !important}
+.photo-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.closure-housekeeping-photo .photo-button{min-width:auto;min-height:34px;padding:7px 11px}
+.closure-housekeeping-photo .photo-remove{display:none;min-height:34px;margin:0;padding:7px 11px}
+.closure-housekeeping-photo .photo-remove.show{display:inline-flex;align-items:center}
+.housekeeping-required-badge{
+  display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border-radius:999px;
+  background:#FFF4E5;color:#9A6700;font-size:10px;font-weight:800;
+}
+
 @media(max-width:850px){
   .row-grid-4,.row-grid-5,.row-grid-field,.admin-grid,.image-tools{grid-template-columns:1fr}
 }
@@ -605,7 +642,7 @@ const DEFAULT_HEADER_IMAGE = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD
 
 const state={
   config:{},sections:[],equipment:[],fields:[],options:{},
-  selected:{},equipmentImages:{},
+  selected:{},equipmentImages:{},housekeepingImage:null,
   adminPin:'',adminRaw:null,
   signatureHasInk:false,signatureEnabled:false,signatureCtx:null,signatureCanvas:null,
   offline:{
@@ -1017,7 +1054,11 @@ function applyConfig(){
   $('previewButton').textContent=c.PREVIEW_BUTTON_TEXT||'Vista previa';
   $('sendButton').textContent=c.SEND_BUTTON_TEXT||'ENVIAR CONTROL';
   $('newControlButton').textContent=c.NEW_CONTROL_BUTTON_TEXT||'NUEVO CONTROL';
-  $('footerText').textContent=c.FOOTER_TEXT||'';
+  {
+    const baseFooter=String(c.FOOTER_TEXT||'Control digital de Equipos de Impulsión').trim();
+    const cleanFooter=baseFooter.replace(/\s*\|\s*Copyright\s*©\s*2026\s*Yair\s+Cort[eé]s\.?\s*$/i,'').trim();
+    $('footerText').textContent=(cleanFooter||'Control digital de Equipos de Impulsión')+' | Copyright © 2026 Yair Cortes.';
+  }
 
   setImage('headerImage',c.HEADER_IMAGE_URL || DEFAULT_HEADER_IMAGE, DEFAULT_HEADER_IMAGE);
   setImage('logoLeft',c.LOGO_LEFT_URL);
@@ -1081,7 +1122,11 @@ function applyConfig(){
   $('previewButton').textContent=c.PREVIEW_BUTTON_TEXT||'Vista previa';
   $('sendButton').textContent=c.SEND_BUTTON_TEXT||'ENVIAR CONTROL';
   $('newControlButton').textContent=c.NEW_CONTROL_BUTTON_TEXT||'NUEVO CONTROL';
-  $('footerText').textContent=c.FOOTER_TEXT||'';
+  {
+    const baseFooter=String(c.FOOTER_TEXT||'Control digital de Equipos de Impulsión').trim();
+    const cleanFooter=baseFooter.replace(/\s*\|\s*Copyright\s*©\s*2026\s*Yair\s+Cort[eé]s\.?\s*$/i,'').trim();
+    $('footerText').textContent=(cleanFooter||'Control digital de Equipos de Impulsión')+' | Copyright © 2026 Yair Cortes.';
+  }
 
   setImage('headerImage',c.HEADER_IMAGE_URL || DEFAULT_HEADER_IMAGE, DEFAULT_HEADER_IMAGE);
   setImage('logoLeft',c.LOGO_LEFT_URL);
@@ -1402,6 +1447,7 @@ function captureDraftSnapshot(){
     general:general,
     closure:closure,
     equipment:equipment,
+    housekeepingImage:state.housekeepingImage||null,
     signatureData:signatureData
   };
 }
@@ -1451,7 +1497,7 @@ function draftHasUsefulData(draft){
     );
   });
 
-  return hasGeneral||hasClosure||hasEquipment||Boolean(draft.signatureData);
+  return hasGeneral||hasClosure||hasEquipment||Boolean(draft.housekeepingImage&&draft.housekeepingImage.dataUrl)||Boolean(draft.signatureData);
 }
 
 async function offerRestoreDraft(){
@@ -1516,6 +1562,8 @@ async function restoreDraftSnapshot(draft){
       }
     });
 
+    updateHousekeepingDecisionUi_();
+
     document.querySelectorAll('[data-key]').forEach(card=>{
       const key=card.dataset.key;
       const saved=draft.equipment&&draft.equipment[key]?draft.equipment[key]:null;
@@ -1565,6 +1613,14 @@ async function restoreDraftSnapshot(draft){
         if(remove) remove.classList.add('show');
       }
     });
+
+    if(draft.housekeepingImage&&draft.housekeepingImage.dataUrl){
+      state.housekeepingImage=draft.housekeepingImage;
+      updateHousekeepingPhotoUi_(true);
+    }else{
+      state.housekeepingImage=null;
+      updateHousekeepingPhotoUi_(false);
+    }
 
     if(draft.signatureData){
       await restoreSignatureData(draft.signatureData);
@@ -2099,50 +2155,87 @@ function makeEquipmentCard(section,equipment){
 function renderClosure(){
   const card=document.createElement('section');
   card.className='card';
+  card.innerHTML='<div class="section-title">'+esc(state.config.CLOSURE_TITLE||'Cierre del control')+'</div>';
 
-  card.innerHTML=
-    '<div class="section-title">'+esc(state.config.CLOSURE_TITLE||'Cierre de la ronda')+'</div>';
+  const housekeeping=document.createElement('div');
+  housekeeping.className='housekeeping-decision';
+  housekeeping.innerHTML=
+    '<label class="required">¿Se realizó housekeeping en el área?</label>'+
+    '<div class="help" style="margin-bottom:7px">Seleccione una opción.</div>'+
+    '<input id="housekeepingDecisionValue" type="hidden" data-bind="closure.housekeeping_realizado" value="">'+
+    '<div class="yesno">'+
+      '<button id="housekeepingYesButton" type="button" class="pill yes" onclick="setHousekeepingDecision_(\'Sí\',this)">Sí</button>'+
+      '<button id="housekeepingNoButton" type="button" class="pill no" onclick="setHousekeepingDecision_(\'No\',this)">No</button>'+
+    '</div>';
+  card.appendChild(housekeeping);
+
+  const housekeepingPhoto=document.createElement('div');
+  housekeepingPhoto.className='closure-housekeeping-photo';
+  housekeepingPhoto.innerHTML=
+    '<label class="required">Evidencia fotográfica del área</label>'+
+    '<div class="help">Adjunte una fotografía al finalizar la ronda.</div>'+
+    '<div class="photo-actions">'+
+      '<input id="housekeepingPhotoInput" type="file" accept="image/*" style="display:none">'+
+      '<button id="housekeepingPhotoButton" type="button" class="photo-button">📷 Adjuntar fotografía</button>'+
+      '<button id="removeHousekeepingPhotoButton" type="button" class="photo-remove">Quitar imagen</button>'+
+      '<span id="housekeepingPhotoStatus" class="housekeeping-required-badge">Requerida</span>'+
+    '</div>';
+  card.appendChild(housekeepingPhoto);
 
   const grid=document.createElement('div');
-  grid.className='grid';
-
+  grid.className='grid'; grid.style.marginTop='16px';
+  const textareas=[];
   fieldsFor('CLOSURE').forEach(f=>{
+    if(fieldKey(f.id)===fieldKey('housekeeping_realizado')) return;
     const node=makeField(f,'closure');
-
-    if(f.type==='textarea'){
-      card.appendChild(node);
-    }else{
-      grid.appendChild(node);
-    }
+    if(f.type==='textarea') textareas.push(node); else grid.appendChild(node);
   });
-
-  if(grid.children.length){
-    card.insertBefore(grid,card.children[1]||null);
-  }
+  if(grid.children.length) card.appendChild(grid);
+  textareas.forEach(node=>card.appendChild(node));
 
   const signature=document.createElement('div');
   signature.className='signature-wrap';
   signature.innerHTML=
     '<label class="required">'+esc(state.config.SIGNATURE_TITLE||'Firma del trabajador / inspector')+'</label>'+
-    '<div class="help" style="margin-bottom:8px">'+
-      esc(state.config.SIGNATURE_HELP||'Pulse “Firmar” para habilitar el recuadro. Al terminar, pulse “Finalizar firma”.')+
-    '</div>'+
+    '<div class="help" style="margin-bottom:8px">'+esc(state.config.SIGNATURE_HELP||'Pulse “Firmar” para habilitar el recuadro. Al terminar, pulse “Finalizar firma”.')+'</div>'+
     '<div class="signature-pad-shell">'+
       '<canvas id="signatureCanvas" class="signature-pad" aria-label="Área para realizar la firma"></canvas>'+
       '<div id="signatureLockOverlay" class="signature-lock-overlay">Pulsa “Firmar” para habilitar el recuadro</div>'+
     '</div>'+
     '<div class="signature-actions">'+
       '<button type="button" class="signature-enable-button" id="enableSignatureButton">✍️ Firmar</button>'+
-      '<button type="button" class="secondary-button" id="clearSignatureButton">'+
-        esc(state.config.SIGNATURE_CLEAR_TEXT||'Limpiar firma')+
-      '</button>'+
+      '<button type="button" class="secondary-button" id="clearSignatureButton">'+esc(state.config.SIGNATURE_CLEAR_TEXT||'Limpiar firma')+'</button>'+
       '<span id="signatureStatus" class="signature-status">Firma pendiente</span>'+
     '</div>';
-
   card.appendChild(signature);
   $('closureContainer').appendChild(card);
 
+  const hkInput=$('housekeepingPhotoInput');
+  const hkButton=$('housekeepingPhotoButton');
+  const hkRemove=$('removeHousekeepingPhotoButton');
+  if(hkButton&&hkInput) hkButton.addEventListener('click',()=>hkInput.click());
+  if(hkInput) hkInput.addEventListener('change',()=>handleHousekeepingPhoto_(hkInput));
+  if(hkRemove) hkRemove.addEventListener('click',()=>clearHousekeepingPhoto_(true));
+
+  updateHousekeepingDecisionUi_();
+  updateHousekeepingPhotoUi_(Boolean(state.housekeepingImage&&state.housekeepingImage.dataUrl));
   requestAnimationFrame(initSignaturePad);
+}
+
+function setHousekeepingDecision_(value,button){
+  const input=$('housekeepingDecisionValue');
+  if(input) input.value=value;
+  document.querySelectorAll('#housekeepingYesButton,#housekeepingNoButton').forEach(btn=>btn.classList.remove('active'));
+  if(button) button.classList.add('active');
+  scheduleDraftSave();
+}
+
+function updateHousekeepingDecisionUi_(){
+  const input=$('housekeepingDecisionValue');
+  const value=input?String(input.value||''):'';
+  const yes=$('housekeepingYesButton'),no=$('housekeepingNoButton');
+  if(yes) yes.classList.toggle('active',value==='Sí');
+  if(no) no.classList.toggle('active',value==='No');
 }
 
 function initSignaturePad(){
@@ -2506,6 +2599,51 @@ function clearEquipmentPhoto(key,card,clearInput=true){
 }
 
 
+
+function updateHousekeepingPhotoUi_(hasPhoto){
+  const button=$('housekeepingPhotoButton');
+  const remove=$('removeHousekeepingPhotoButton');
+  const status=$('housekeepingPhotoStatus');
+  if(button){
+    button.textContent=hasPhoto?'✓ Fotografía adjunta':'📷 Adjuntar fotografía';
+    button.classList.toggle('has-photo',Boolean(hasPhoto));
+  }
+  if(remove) remove.classList.toggle('show',Boolean(hasPhoto));
+  if(status){
+    status.textContent=hasPhoto?'Evidencia lista':'Requerida';
+    status.style.background=hasPhoto?'#E8F5EF':'#FFF4E5';
+    status.style.color=hasPhoto?'#157347':'#9A6700';
+  }
+}
+
+function handleHousekeepingPhoto_(input){
+  const file=input&&input.files?input.files[0]:null;
+  if(!file) return;
+  if(!/^image\//i.test(file.type||'')){
+    showError('La evidencia de housekeeping debe ser una imagen.'); input.value=''; return;
+  }
+  if(file.size>12*1024*1024){
+    showError('La fotografía de housekeeping es demasiado grande. Seleccione una imagen menor a 12 MB.'); input.value=''; return;
+  }
+  const button=$('housekeepingPhotoButton');
+  if(button) button.textContent='Procesando…';
+  compressEquipmentPhoto(file).then(result=>{
+    state.housekeepingImage={dataUrl:result.dataUrl,fileName:file.name||'housekeeping.jpg'};
+    updateHousekeepingPhotoUi_(true); scheduleDraftSave(50);
+  }).catch(err=>{
+    input.value=''; state.housekeepingImage=null; updateHousekeepingPhotoUi_(false);
+    showError(err&&err.message?err.message:'No se pudo procesar la fotografía de housekeeping.');
+  });
+}
+
+function clearHousekeepingPhoto_(clearInput=true){
+  state.housekeepingImage=null;
+  const input=$('housekeepingPhotoInput');
+  if(clearInput&&input) input.value='';
+  updateHousekeepingPhotoUi_(false);
+  scheduleDraftSave(50);
+}
+
 function collectPayload(validate){
   hideError();
   const general={},closure={},equipment=[];
@@ -2595,18 +2733,30 @@ function collectPayload(validate){
     );
   }
 
-  const totalImageChars=equipment.reduce(
-    (sum,item)=>sum+String(item.imageData||'').length,
-    0
-  );
+  const housekeepingMedia=state.housekeepingImage;
 
-  if(validate&&totalImageChars>12000000){
+  if(validate&&(!housekeepingMedia||!housekeepingMedia.dataUrl)){
+    const hkButton=$('housekeepingPhotoButton');
+    if(hkButton) hkButton.scrollIntoView({behavior:'smooth',block:'center'});
+    throw Error('Debe adjuntar la fotografía obligatoria del housekeeping / condición final del área.');
+  }
+
+  const totalImageChars=
+    equipment.reduce((sum,item)=>sum+String(item.imageData||'').length,0)+
+    String(housekeepingMedia&&housekeepingMedia.dataUrl?housekeepingMedia.dataUrl:'').length;
+
+  if(validate&&totalImageChars>13200000){
     throw Error('Hay demasiadas imágenes o pesan demasiado. Quite algunas fotografías e intente nuevamente.');
   }
 
   const signatureData=getSignatureData(validate);
 
-  return{general,closure,equipment,signatureData};
+  return{
+    general,closure,equipment,
+    housekeepingImageData:housekeepingMedia&&housekeepingMedia.dataUrl?housekeepingMedia.dataUrl:'',
+    housekeepingImageName:housekeepingMedia&&housekeepingMedia.fileName?housekeepingMedia.fileName:'',
+    signatureData
+  };
 }
 
 function showPreview(){
@@ -2652,6 +2802,12 @@ function showPreview(){
         '<td>'+parts.join('<br>')+'</td>';
       body.appendChild(tr);
     });
+
+    if(p.housekeepingImageData){
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td>Cierre</td><td>Housekeeping</td><td><strong>Fotografía:</strong> evidencia adjunta</td>';
+      body.appendChild(tr);
+    }
 
     if(state.signatureHasInk){
       const tr=document.createElement('tr');
@@ -2802,6 +2958,10 @@ async function startNewControl(){
     const el=document.querySelector('[data-bind="closure.'+f.id+'"]');
     if(el) el.value='';
   });
+
+  state.housekeepingImage=null;
+  updateHousekeepingDecisionUi_();
+  clearHousekeepingPhoto_(true);
 
   // Equipos.
   document.querySelectorAll('[data-key]').forEach(card=>{

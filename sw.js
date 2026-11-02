@@ -1,4 +1,4 @@
-const CACHE_NAME='mcm-impulsion-pwa-v2-3';
+const CACHE_NAME='mcm-impulsion-pwa-v2-4';
 const BASE='/mcm-impulsion-offline/';
 const INDEX=BASE+'index.html';
 
